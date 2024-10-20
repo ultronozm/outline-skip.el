@@ -1,0 +1,30 @@
+#+title: outline-skip.el: Skip certain outline headings
+#+author: Paul D. Nelson
+
+* Overview
+
+=outline-skip= is an Emacs package that makes [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Outline-Mode.html][outline]] commands skip over certain regions, such as verbatim environments and comments.
+
+* Installation
+
+Install =outline-skip= by downloading the source and using =M-x package-install-file=, or through your preferred package manager.
+
+* Usage
+
+After installing the package, you can enable it a given buffer with =M-x outline-skip-mode=.  This will advise the standard outline navigation commands to skip over regions determined by =outline-skip-check-function=.  To enable it in certain modes, use the same function as a hook.  For example, if you want it enabled automatically in AUCTeX LaTeX buffers, add the following to your config:
+
+#+begin_src emacs-lisp
+(add-hook #'LaTeX-mode-hook #'outline-skip-mode)
+#+end_src
+
+=outline-skip-mode= probably won't work well in all modes, so be selective.
+
+* Customization
+
+You can customize the following variables, e.g., via =M-x customize-group RET outline-skip RET=.
+
+- =outline-skip-commands=: List of outline commands to be advised.
+- =outline-skip-check-function=: Function to determine if a region should be skipped.
+- =outline-skip-max-iterations=: Maximum number of iterations for skipping regions.
+
+
