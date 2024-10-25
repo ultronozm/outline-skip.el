@@ -54,42 +54,49 @@ Should return non-nil if current heading should be skipped."
   :type 'function
   :group 'outline-skip)
 
-;;;###autoload
-(define-minor-mode outline-skip-mode
-  "Minor mode to make outline commands skip certain headings."
-  :global nil
-  (if outline-skip-mode
-      (outline-skip-mode--enable)
-    (outline-skip-mode--disable)))
-
-(defun outline-skip-mode--enable ()
-  "Enable advice for outline commands to skip specified regions."
-  (dolist (cmd outline-skip-commands)
-    (advice-add cmd :around #'outline-skip--advice)))
-
-(defun outline-skip-mode--disable ()
-  "Disable advice for outline commands."
-  (dolist (cmd outline-skip-commands)
-    (advice-remove cmd #'outline-skip--advice)))
-
 (defcustom outline-skip-max-iterations 100
   "Maximum number of iterations for skipping regions in outline commands."
   :type 'integer
   :group 'outline-skip)
 
+;; Buffer-local variable to control advice behavior
+(defvar-local outline-skip-active nil
+  "Buffer-local flag indicating whether outline-skip is active.")
+
 (defun outline-skip--advice (orig-fun &rest args)
   "Advice to make outline commands skip specified regions.
 ORIG-FUN is the original function to be advised, ARGS are the arguments
 passed to the function."
-  (let ((n outline-skip-max-iterations))
-    (apply orig-fun args)
-    (while (and (funcall outline-skip-check-function) (> n 0))
-      (setq n (1- n))
-      (apply orig-fun args))
-    (when (zerop n)
-      (error "oops")
-      (display-warning 'outline-skip
-                       "Maximum iterations reached in outline-skip"))))
+  (if (not outline-skip-active)
+      (apply orig-fun args)
+    (let ((n outline-skip-max-iterations))
+      (apply orig-fun args)
+      (while (and (funcall outline-skip-check-function) (> n 0))
+        (setq n (1- n))
+        (apply orig-fun args))
+      (when (zerop n)
+        (display-warning 'outline-skip
+                         "Maximum iterations reached in outline-skip")))))
+
+;;;###autoload
+(define-minor-mode outline-skip-mode
+  "Minor mode to make outline commands skip certain headings."
+  :global nil
+  (setq outline-skip-active outline-skip-mode))
+
+;;;###autoload
+(defun outline-skip-install ()
+  "Install outline-skip advice globally."
+  (interactive)
+  (dolist (cmd outline-skip-commands)
+    (advice-add cmd :around #'outline-skip--advice)))
+
+;;;###autoload
+(defun outline-skip-uninstall ()
+  "Remove outline-skip advice globally."
+  (interactive)
+  (dolist (cmd outline-skip-commands)
+    (advice-remove cmd #'outline-skip--advice)))
 
 (provide 'outline-skip)
 ;;; outline-skip.el ends here
